@@ -1,7 +1,9 @@
-extern crate tempdir;
 extern crate tantivy;
 extern crate ansi_term;
 
+use std::env;
+use std::fs::File;
+use std::io::Read;
 use ansi_term::Colour::*;
 
 mod indexing;
@@ -10,26 +12,46 @@ use indexing::InputDocument;
 use indexing::DocumentIndex;
 
 fn main() {
-    program();
-    ()
-}
-pub fn program() {
     print_intro();
+    let index = build_index_from_sample_input().expect("unable to build index from sample input");
 
-    let input: Vec<InputDocument> = vec![InputDocument::new(
-        "Never-ending Song".to_string(),
-        "This is the song that never ends. It goes on and on my friend.".to_string()
-    )];
+    let results = index.search("warp");
 
-
-    if let Ok(index) = DocumentIndex::build_index(input.into_iter()) {
-        let results = index.search("song");
-
-        for result in results {
-            println!("Result: {}", result);
-        }
+    for result in results {
+        println!("Result: {}", result);
     }
     println!("Done!");
+}
+
+fn build_index_from_sample_input() -> Result<DocumentIndex, std::io::Error> {
+    println!("Building in-memory index of sample input files...");
+
+    let mut dir = env::current_dir().unwrap();
+    dir.push("sample_input");
+
+    let read_dir = dir.read_dir()?;
+    let mut input_docs: Vec<InputDocument> = vec![];
+
+    for entry in read_dir {
+        let entry = entry?;
+        let path = entry.path();
+
+        if !path.is_file() {
+            continue;
+        }
+
+        let mut f = File::open(&path)?;
+        let mut contents = String::new();
+        f.read_to_string(&mut contents)?;
+        let contents = contents;
+
+        let file_name = path.to_str().unwrap().to_string();
+
+        input_docs.push(InputDocument::new(file_name, contents));
+    }
+
+    let result = DocumentIndex::build_index(input_docs.into_iter());
+    Ok(result.expect("bad"))
 }
 
 fn print_intro() {

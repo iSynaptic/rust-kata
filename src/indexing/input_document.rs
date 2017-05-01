@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct InputDocument {
     name: String,
     contents: String,

@@ -1,4 +1,3 @@
-use tempdir::TempDir;
 use tantivy::Index;
 use tantivy::schema::*;
 use tantivy::query::QueryParser;
@@ -35,12 +34,9 @@ impl DocumentIndex {
     pub fn build_index<T>(input_docs: T) -> Result<DocumentIndex, ::tantivy::Error>
         where T: Iterator<Item = InputDocument>
     {
-        let index_dir = TempDir::new("rustkata")?;
-        let index_path = index_dir.path();
-
         let schema = DocumentIndex::build_schema();
 
-        let index = try!(Index::create(index_path, schema.clone()));
+        let index = Index::create_in_ram(schema.clone());
 
         let name_field = schema.get_field("name").unwrap();
         let contents_field = schema.get_field("contents").unwrap();
