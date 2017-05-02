@@ -1,10 +1,13 @@
 extern crate tantivy;
 extern crate ansi_term;
+extern crate regex;
 
 use std::env;
 use std::io;
 use std::io::Write;
 use ansi_term::Colour::*;
+
+use regex::Regex;
 
 mod indexing;
 
@@ -14,6 +17,8 @@ use indexing::DocumentLoader;
 
 fn main() {
     print_intro();
+
+    let text = "Retroactively relinquishing remunerations is reprehensible.";
 
     let sample_docs = get_sample_input_documents().expect("unable to load sample documents");
 
@@ -73,7 +78,7 @@ fn ask_for_search_term() -> Option<String> {
 fn prompt_for_method_and_search(term: &str,
                                 index: &DocumentIndex,
                                 docs: &Vec<InputDocument>)
-                                -> Result<Vec<String>, &'static str> {
+                                -> Result<Vec<String>, String> {
 
     let mut method_answer = String::new();
     println!("Search Method: 1) String Match 2) Regular Expression 3) Indexed");
@@ -94,9 +99,19 @@ fn prompt_for_method_and_search(term: &str,
 
             Ok(indexing::search_by_string_match(&term, docs))
         }
-        "2" => Ok(indexing::search_by_regex(&term, docs)),
+        "2" => {
+            let re = Regex::new(&term);
+            if let Err(e) = re {
+                let msg = format!("Expression invalid: {}", e);
+                return Err(msg);
+            };
+
+            let re = re.ok().unwrap();
+
+            Ok(indexing::search_by_regex(&re, docs))
+        }
         "3" => Ok(indexing::search_by_index(&term, &index)),
-        _ => Err("Unrecognized search method"),
+        _ => Err("Unrecognized search method".to_string()),
     }
 }
 
