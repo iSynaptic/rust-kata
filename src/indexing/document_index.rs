@@ -31,8 +31,8 @@ impl DocumentIndex {
             .collect::<Vec<_>>()
     }
 
-    pub fn build_index<T>(input_docs: T) -> Result<DocumentIndex, ::tantivy::Error>
-        where T: Iterator<Item = InputDocument>
+    pub fn build_index<'a, T>(input_docs: T) -> Result<DocumentIndex, ::tantivy::Error>
+        where T: Iterator<Item = &'a InputDocument>
     {
         let schema = DocumentIndex::build_schema();
 
@@ -81,7 +81,7 @@ mod tests {
     fn can_build_empty_index() {
         let docs: Vec<InputDocument> = vec![];
 
-        let index = DocumentIndex::build_index(docs.into_iter());
+        let index = DocumentIndex::build_index(docs.iter());
         assert!(index.is_ok());
     }
 
@@ -89,7 +89,7 @@ mod tests {
     fn can_index_one_document() {
         let docs = vec![InputDocument::new("one", "sample content")];
 
-        let index = DocumentIndex::build_index(docs.into_iter());
+        let index = DocumentIndex::build_index(docs.iter());
         assert!(index.is_ok());
     }
 
@@ -97,7 +97,7 @@ mod tests {
     fn can_search_index_with_one_document() {
         let docs = vec![InputDocument::new("one", "sample content")];
 
-        let index = DocumentIndex::build_index(docs.into_iter()).unwrap();
+        let index = DocumentIndex::build_index(docs.iter()).unwrap();
         let results = index.search("sample");
 
         assert!(results.len() == 1);
@@ -113,7 +113,7 @@ mod tests {
                         InputDocument::new("three",
                                            "The Infinite Improbability Drive is a faster-than-light drive. In the 2005 film, for instance, the first time the Improbability Drive is used, the entire ship, after traveling at extreme velocity, arrives at its destination, ends up as a giant ball of yarn for a few seconds, and the main characters are rendered as animated yarn dolls.")];
 
-        let index = DocumentIndex::build_index(docs.into_iter()).unwrap();
+        let index = DocumentIndex::build_index(docs.iter()).unwrap();
         let results = index.search("velocity");
 
         assert!(results.len() == 2);
