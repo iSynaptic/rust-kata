@@ -18,8 +18,6 @@ use indexing::DocumentLoader;
 fn main() {
     print_intro();
 
-    let text = "Retroactively relinquishing remunerations is reprehensible.";
-
     let sample_docs = get_sample_input_documents().expect("unable to load sample documents");
 
     println!("Building in-memory index of sample input files...\n");
