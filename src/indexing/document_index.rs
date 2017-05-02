@@ -54,7 +54,7 @@ impl DocumentIndex {
         try!(index_writer.commit());
         try!(index.load_searchers());
 
-        let query_parser = QueryParser::new(index.schema(), vec![name_field, contents_field]);
+        let query_parser = QueryParser::new(index.schema(), vec![contents_field]);
 
         Ok(DocumentIndex {
                index: index,

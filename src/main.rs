@@ -27,7 +27,7 @@ fn main() {
         }
 
         let search_term = search_term.unwrap();
-        let results = prompt_for_method_and_search(&search_term, &index);
+        let results = prompt_for_method_and_search(&search_term, &index, &sample_docs);
 
         if results.is_err() {
             println!("{} - please try again.\n", results.err().unwrap());
@@ -71,7 +71,8 @@ fn ask_for_search_term() -> Option<String> {
 }
 
 fn prompt_for_method_and_search(term: &str,
-                                index: &DocumentIndex)
+                                index: &DocumentIndex,
+                                docs: &Vec<InputDocument>)
                                 -> Result<Vec<String>, &'static str> {
 
     let mut method_answer = String::new();
@@ -86,6 +87,14 @@ fn prompt_for_method_and_search(term: &str,
     println!();
 
     match method_answer.trim() {
+        "1" => {
+            println!("{}{}",
+                     Yellow.bold().paint("NOTE: "),
+                     "search by 'String Match' is case sensitive.\n");
+
+            Ok(indexing::search_by_string_match(&term, docs))
+        }
+        "2" => Ok(indexing::search_by_regex(&term, docs)),
         "3" => Ok(indexing::search_by_index(&term, &index)),
         _ => Err("Unrecognized search method"),
     }
@@ -95,7 +104,7 @@ fn ask_should_continue() -> bool {
     let mut continue_answer = String::new();
 
     println!("\nWould you like to search again?");
-    print!("Type 'no' to exit. Press ENTER to search again: ");
+    print!("Enter 'no' to exit. Press ENTER to search again: ");
     io::stdout().flush().unwrap();
 
     io::stdin()
