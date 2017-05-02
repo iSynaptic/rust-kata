@@ -20,3 +20,16 @@ impl InputDocument {
         &self.contents
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::InputDocument;
+
+    #[test]
+    fn input_document_created_correctly() {
+        let doc = InputDocument::new("one", "sample contents");
+
+        assert!(doc.name() == "one");
+        assert!(doc.contents() == "sample contents");
+    }
+}
