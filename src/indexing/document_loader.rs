@@ -24,7 +24,7 @@ impl DocumentLoader {
             f.read_to_string(&mut contents)?;
             let contents = contents;
 
-            let file_name = path.to_str().unwrap();
+            let file_name = path.file_name().unwrap().to_str().unwrap();
 
             input_docs.push(InputDocument::new(file_name, &contents));
         }
