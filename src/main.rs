@@ -1,6 +1,7 @@
 extern crate tantivy;
 extern crate ansi_term;
 extern crate regex;
+extern crate time;
 
 use std::env;
 use std::io;
@@ -8,12 +9,18 @@ use std::io::Write;
 use ansi_term::Colour::*;
 
 use regex::Regex;
+use time::{Duration, PreciseTime};
 
 mod indexing;
 
 use indexing::InputDocument;
 use indexing::DocumentIndex;
 use indexing::DocumentLoader;
+
+struct SearchResults {
+    duration: Duration,
+    documents: Vec<String>,
+}
 
 fn main() {
     print_intro();
@@ -41,9 +48,19 @@ fn main() {
 
         println!("Search results:\n");
 
-        for result in results {
+        for result in results.documents {
             println!("  {}", result);
         }
+
+        let duration = results.duration;
+
+        if duration.num_milliseconds() > 0 {
+            println!("\n Elapsed time: {} ms", duration.num_milliseconds());
+        } else {
+            println!("\n Elapsed time: {} μs",
+                     duration.num_microseconds().unwrap());
+        }
+
 
         if !ask_should_continue() {
             break;
@@ -76,7 +93,7 @@ fn ask_for_search_term() -> Option<String> {
 fn prompt_for_method_and_search(term: &str,
                                 index: &DocumentIndex,
                                 docs: &Vec<InputDocument>)
-                                -> Result<Vec<String>, String> {
+                                -> Result<SearchResults, String> {
 
     let mut method_answer = String::new();
     println!("Search Method: 1) String Match 2) Regular Expression 3) Indexed");
@@ -89,13 +106,21 @@ fn prompt_for_method_and_search(term: &str,
 
     println!();
 
+    let start = PreciseTime::now();
+
     match method_answer.trim() {
         "1" => {
             println!("{}{}",
                      Yellow.bold().paint("NOTE: "),
                      "search by 'String Match' is case sensitive.\n");
 
-            Ok(indexing::search_by_string_match(&term, docs))
+            let results = indexing::search_by_string_match(&term, docs);
+            let duration = start.to(PreciseTime::now());
+
+            Ok(SearchResults {
+                   duration: duration,
+                   documents: results,
+               })
         }
         "2" => {
             let re = Regex::new(&term);
@@ -106,9 +131,24 @@ fn prompt_for_method_and_search(term: &str,
 
             let re = re.ok().unwrap();
 
-            Ok(indexing::search_by_regex(&re, docs))
+            let results = indexing::search_by_regex(&re, docs);
+            let duration = start.to(PreciseTime::now());
+
+            Ok(SearchResults {
+                   duration: duration,
+                   documents: results,
+               })
         }
-        "3" => Ok(indexing::search_by_index(&term, &index)),
+        "3" => {
+            let results = indexing::search_by_index(&term, &index);
+            let duration = start.to(PreciseTime::now());
+
+            Ok(SearchResults {
+                   duration: duration,
+                   documents: results,
+               })
+
+        }
         _ => Err("Unrecognized search method".to_string()),
     }
 }
