@@ -5,10 +5,10 @@ pub struct InputDocument {
 }
 
 impl InputDocument {
-    pub fn new(name: String, contents: String) -> InputDocument {
+    pub fn new(name: &str, contents: &str) -> InputDocument {
         InputDocument {
-            name: name,
-            contents: contents,
+            name: name.to_string(),
+            contents: contents.to_string(),
         }
     }
 

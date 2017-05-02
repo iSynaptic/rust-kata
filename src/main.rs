@@ -45,9 +45,9 @@ fn build_index_from_sample_input() -> Result<DocumentIndex, std::io::Error> {
         f.read_to_string(&mut contents)?;
         let contents = contents;
 
-        let file_name = path.to_str().unwrap().to_string();
+        let file_name = path.to_str().unwrap();
 
-        input_docs.push(InputDocument::new(file_name, contents));
+        input_docs.push(InputDocument::new(file_name, &contents));
     }
 
     let result = DocumentIndex::build_index(input_docs.into_iter());

@@ -54,7 +54,7 @@ impl DocumentIndex {
         try!(index_writer.commit());
         try!(index.load_searchers());
 
-        let query_parser = QueryParser::new(index.schema(), vec![name_field]);
+        let query_parser = QueryParser::new(index.schema(), vec![name_field, contents_field]);
 
         Ok(DocumentIndex {
                index: index,
@@ -69,5 +69,38 @@ impl DocumentIndex {
         schema_builder.add_text_field("contents", TEXT);
 
         schema_builder.build()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DocumentIndex;
+    use super::InputDocument;
+
+    #[test]
+    fn can_build_empty_index() {
+        let docs: Vec<InputDocument> = vec![];
+
+        let index = DocumentIndex::build_index(docs.into_iter());
+        assert!(index.is_ok());
+    }
+
+    #[test]
+    fn can_index_one_document() {
+        let docs = vec![InputDocument::new("one", "sample content")];
+
+        let index = DocumentIndex::build_index(docs.into_iter());
+        assert!(index.is_ok());
+    }
+
+    #[test]
+    fn can_search_index_with_one_document() {
+        let docs = vec![InputDocument::new("one", "sample content")];
+
+        let index = DocumentIndex::build_index(docs.into_iter()).unwrap();
+        let results = index.search("sample");
+
+        assert!(results.len() == 1);
+        assert_eq!(results[0], "one")
     }
 }
