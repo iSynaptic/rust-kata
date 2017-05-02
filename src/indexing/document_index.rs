@@ -103,4 +103,21 @@ mod tests {
         assert!(results.len() == 1);
         assert_eq!(results[0], "one")
     }
+
+    #[test]
+    fn can_search_index_with_many_document() {
+        let docs = vec![InputDocument::new("one",
+                                           "Consequently, spacecraft at warp velocity can continue to interact with objects in \"normal space\"."),
+                        InputDocument::new("two",
+                                           "The Hitchhiker's Guide to the Galaxy is a comedy science fiction series created by Douglas Adams."),
+                        InputDocument::new("three",
+                                           "The Infinite Improbability Drive is a faster-than-light drive. In the 2005 film, for instance, the first time the Improbability Drive is used, the entire ship, after traveling at extreme velocity, arrives at its destination, ends up as a giant ball of yarn for a few seconds, and the main characters are rendered as animated yarn dolls.")];
+
+        let index = DocumentIndex::build_index(docs.into_iter()).unwrap();
+        let results = index.search("velocity");
+
+        assert!(results.len() == 2);
+        assert_eq!(results[0], "one");
+        assert_eq!(results[1], "three");
+    }
 }
