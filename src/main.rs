@@ -2,14 +2,13 @@ extern crate tantivy;
 extern crate ansi_term;
 
 use std::env;
-use std::fs::File;
-use std::io::Read;
 use ansi_term::Colour::*;
 
 mod indexing;
 
 use indexing::InputDocument;
 use indexing::DocumentIndex;
+use indexing::DocumentLoader;
 
 fn main() {
     print_intro();
@@ -29,29 +28,10 @@ fn build_index_from_sample_input() -> Result<DocumentIndex, std::io::Error> {
     let mut dir = env::current_dir().unwrap();
     dir.push("sample_input");
 
-    let read_dir = dir.read_dir()?;
-    let mut input_docs: Vec<InputDocument> = vec![];
-
-    for entry in read_dir {
-        let entry = entry?;
-        let path = entry.path();
-
-        if !path.is_file() {
-            continue;
-        }
-
-        let mut f = File::open(&path)?;
-        let mut contents = String::new();
-        f.read_to_string(&mut contents)?;
-        let contents = contents;
-
-        let file_name = path.to_str().unwrap();
-
-        input_docs.push(InputDocument::new(file_name, &contents));
-    }
-
+    let input_docs = DocumentLoader::load_from_directory(dir.as_path())?;
     let result = DocumentIndex::build_index(input_docs.into_iter());
-    Ok(result.expect("bad"))
+
+    Ok(result.expect("unable to build index"))
 }
 
 fn print_intro() {
