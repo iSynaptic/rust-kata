@@ -1,0 +1,5 @@
+.vagrant
+.vscode
+src
+target/debug
+target/release/*/*.*
