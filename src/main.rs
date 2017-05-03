@@ -26,9 +26,30 @@ fn main() {
     print_intro();
 
     let sample_docs = get_sample_input_documents().expect("unable to load sample documents");
-
     println!("Building in-memory index of sample input files...\n");
+
     let index = DocumentIndex::build_index(sample_docs.iter()).expect("unable to build index");
+
+    let args: Vec<String> = env::args().collect();
+    let mut mode: Option<&str> = None;
+
+    if args.len() == 3 && args[1] == "--mode" {
+        mode = Some(&args[2]);
+    }
+
+    match mode {
+        Some("perf") => performance_test(&sample_docs, &index),
+        _ => interactive_search(&sample_docs, &index),
+    };
+
+    println!("Thank you, come again!");
+}
+
+fn performance_test(docs: &Vec<InputDocument>, index: &DocumentIndex) {
+    println!("Do perf!!!!!");
+}
+
+fn interactive_search(docs: &Vec<InputDocument>, index: &DocumentIndex) {
 
     loop {
         let search_term = ask_for_search_term();
@@ -37,7 +58,7 @@ fn main() {
         }
 
         let search_term = search_term.unwrap();
-        let results = prompt_for_method_and_search(&search_term, &index, &sample_docs);
+        let results = prompt_for_method_and_search(&search_term, &index, docs);
 
         if results.is_err() {
             println!("{} - please try again.\n", results.err().unwrap());
@@ -66,8 +87,6 @@ fn main() {
             break;
         }
     }
-
-    println!("Thank you, come again!");
 }
 
 fn ask_for_search_term() -> Option<String> {
@@ -106,23 +125,20 @@ fn prompt_for_method_and_search(term: &str,
 
     println!();
 
-    let start = PreciseTime::now();
-
-    match method_answer.trim() {
-        "1" => {
+    let search_method = || { 
+      match method_answer.trim() {
+        
+        "1" => 
+        {
             println!("{}{}",
-                     Yellow.bold().paint("NOTE: "),
-                     "search by 'String Match' is case sensitive.\n");
+                    Yellow.bold().paint("NOTE: "),
+                    "search by 'String Match' is case sensitive.\n");
 
-            let results = indexing::search_by_string_match(&term, docs);
-            let duration = start.to(PreciseTime::now());
-
-            Ok(SearchResults {
-                   duration: duration,
-                   documents: results,
-               })
+            Ok(indexing::search_by_string_match(&term, docs))
         }
-        "2" => {
+
+        "2" => 
+        {
             let re = Regex::new(&term);
             if let Err(e) = re {
                 let msg = format!("Expression invalid: {}", e);
@@ -131,26 +147,28 @@ fn prompt_for_method_and_search(term: &str,
 
             let re = re.ok().unwrap();
 
-            let results = indexing::search_by_regex(&re, docs);
-            let duration = start.to(PreciseTime::now());
-
-            Ok(SearchResults {
-                   duration: duration,
-                   documents: results,
-               })
+            Ok(indexing::search_by_regex(&re, docs))
         }
-        "3" => {
-            let results = indexing::search_by_index(&term, &index);
-            let duration = start.to(PreciseTime::now());
-
-            Ok(SearchResults {
-                   duration: duration,
-                   documents: results,
-               })
-
-        }
+        
+        "3" => Ok(indexing::search_by_index(&term, &index)),
         _ => Err("Unrecognized search method".to_string()),
-    }
+    }};
+
+    time_search(search_method)
+}
+
+fn time_search<F>(search_func: F) -> Result<SearchResults, String>
+    where F: Fn() -> Result<Vec<String>, String>
+{
+    let start = PreciseTime::now();
+
+    let results = search_func()?;
+    let duration = start.to(PreciseTime::now());
+
+    Ok(SearchResults {
+           duration: duration,
+           documents: results,
+       })
 }
 
 fn ask_should_continue() -> bool {
