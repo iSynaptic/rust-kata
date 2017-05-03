@@ -6,14 +6,38 @@ pub use self::document_index::DocumentIndex;
 pub use self::document_loader::DocumentLoader;
 pub use self::input_document::InputDocument;
 
+use std::fmt;
 use regex::Regex;
+use std::slice::Iter;
 
-
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum SearchMethod {
     StringMatch,
     Regex,
     Index
+}
+
+impl SearchMethod {
+    pub fn iter() -> Iter<'static, SearchMethod> {
+        static METHODS: [SearchMethod;  3] = [
+            SearchMethod::StringMatch,
+            SearchMethod::Regex,
+            SearchMethod::Index,
+        ];
+
+        METHODS.into_iter()
+    }   
+}
+
+impl fmt::Display for SearchMethod {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let text = match *self {
+            SearchMethod::StringMatch => "String Match",
+            SearchMethod::Regex => "Regular Expression",
+            SearchMethod::Index => "Indexed",
+        };
+        write!(f, "{}", text)
+    }
 }
 
 pub type SearchFn = Fn(&str, &DocumentIndex, &Vec<InputDocument>) ->

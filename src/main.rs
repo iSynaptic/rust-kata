@@ -2,6 +2,7 @@ extern crate tantivy;
 extern crate ansi_term;
 extern crate regex;
 extern crate time;
+extern crate rand;
 
 use std::env;
 use std::io;
@@ -9,6 +10,8 @@ use std::io::Write;
 use ansi_term::Colour::*;
 
 use time::{Duration, PreciseTime};
+use regex::Regex;
+use rand::distributions::{IndependentSample, Range};
 
 mod indexing;
 
@@ -42,8 +45,64 @@ fn main() {
     println!("Thank you, come again!");
 }
 
-fn performance_test(_: &Vec<InputDocument>, _: &DocumentIndex) {
-    println!("Do perf!!!!!");
+fn performance_test(docs: &Vec<InputDocument>, index: &DocumentIndex) {
+    let filter_regex = Regex::new("^[\\w]+$").unwrap();
+    let mut words : Vec<&str> = docs.iter()
+        .take(30) // use words from the first 30 input documents
+        .map(|x| x.contents())
+        .flat_map(|x| x.split(" "))
+        .filter(|x| filter_regex.is_match(x))
+        .collect();
+    
+    // documentation indicates the vector must be sorted prior to dedupliccation
+    words.sort_by(|&x, &y| x.cmp(y));
+    words.dedup();
+
+    print!("Executing naive performance benchmark.\n\nHow many iterations would you like to run: ");
+    io::stdout().flush().unwrap();
+
+    let mut iterations = String::new();
+
+    io::stdin()
+        .read_line(&mut iterations)
+        .expect("Failed to read line");
+    
+    let iterations = iterations.trim().parse::<u32>();
+
+    if iterations.is_err() {
+        println!("You must enter a number. Exiting...\n");
+        return;
+    }
+
+    let iterations = iterations.unwrap();
+
+    println!("Results:\n");
+
+    for method in SearchMethod::iter() {
+
+        print!("  {}: ...", method);
+        io::stdout().flush().unwrap();
+
+        let search_fn = indexing::get_search_function(*method);
+        
+        // not going to warm up the code paths first
+        let (_, duration) = time_work(||{
+            let mut rng = rand::thread_rng();
+            let between = Range::new(0usize, words.len() - 1);
+
+            for _ in 1..iterations {
+                let i = between.ind_sample(&mut rng);
+                let search_word = words[i];
+
+                search_fn(search_word, index, docs).unwrap();
+            }
+        });
+
+        let duration = fmt_duration(&duration);
+        println!("\u{0008}\u{0008}\u{0008}{}",duration);
+    }
+
+    println!();
 }
 
 fn interactive_search(docs: &Vec<InputDocument>, index: &DocumentIndex) {
@@ -147,15 +206,22 @@ fn prompt_for_method() -> Result<SearchMethod, String> {
 fn time_search<F>(search_func: F) -> Result<SearchResults, String>
     where F: Fn() -> Result<Vec<String>, String>
 {
-    let start = PreciseTime::now();
-
-    let results = search_func()?;
-    let duration = start.to(PreciseTime::now());
+    let (results, duration) = 
+        time_work(|| search_func());
 
     Ok(SearchResults {
            duration: duration,
-           documents: results,
+           documents: results?,
        })
+}
+
+fn time_work<T, F>(work: F) -> (T, Duration) 
+    where F: Fn() -> T {
+    let start = PreciseTime::now();
+    let results = work();
+    let duration = start.to(PreciseTime::now());
+
+    (results, duration)
 }
 
 fn ask_should_continue() -> bool {
@@ -197,4 +263,12 @@ fn print_intro() {
 "#;
 
     println!("{}", Red.bold().paint(intro));
+}
+
+fn fmt_duration(duration: &Duration) -> String {
+    if duration.num_milliseconds() > 0 {
+        format!("{} ms", duration.num_milliseconds())
+    } else {
+        format!("{} μs", duration.num_microseconds().unwrap())
+    }
 }
