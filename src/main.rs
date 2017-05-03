@@ -8,14 +8,11 @@ use std::io;
 use std::io::Write;
 use ansi_term::Colour::*;
 
-use regex::Regex;
 use time::{Duration, PreciseTime};
 
 mod indexing;
 
-use indexing::InputDocument;
-use indexing::DocumentIndex;
-use indexing::DocumentLoader;
+use indexing::{InputDocument, DocumentIndex, DocumentLoader, SearchMethod };
 
 struct SearchResults {
     duration: Duration,
@@ -45,7 +42,7 @@ fn main() {
     println!("Thank you, come again!");
 }
 
-fn performance_test(docs: &Vec<InputDocument>, index: &DocumentIndex) {
+fn performance_test(_: &Vec<InputDocument>, _: &DocumentIndex) {
     println!("Do perf!!!!!");
 }
 
@@ -114,6 +111,20 @@ fn prompt_for_method_and_search(term: &str,
                                 docs: &Vec<InputDocument>)
                                 -> Result<SearchResults, String> {
 
+    let search_method = prompt_for_method()?;
+    let search_fn = indexing::get_search_function(search_method);
+
+    if search_method == SearchMethod::StringMatch {
+        println!("{}{}",
+          Yellow.bold().paint("NOTE: "),
+          "search by 'String Match' is case sensitive.\n");
+    }
+
+    time_search(|| search_fn(term, index, docs))
+}
+
+
+fn prompt_for_method() -> Result<SearchMethod, String> {
     let mut method_answer = String::new();
     println!("Search Method: 1) String Match 2) Regular Expression 3) Indexed");
     print!("Enter method: ");
@@ -125,36 +136,12 @@ fn prompt_for_method_and_search(term: &str,
 
     println!();
 
-    let search_method = || { 
-      match method_answer.trim() {
-        
-        "1" => 
-        {
-            println!("{}{}",
-                    Yellow.bold().paint("NOTE: "),
-                    "search by 'String Match' is case sensitive.\n");
-
-            Ok(indexing::search_by_string_match(&term, docs))
-        }
-
-        "2" => 
-        {
-            let re = Regex::new(&term);
-            if let Err(e) = re {
-                let msg = format!("Expression invalid: {}", e);
-                return Err(msg);
-            };
-
-            let re = re.ok().unwrap();
-
-            Ok(indexing::search_by_regex(&re, docs))
-        }
-        
-        "3" => Ok(indexing::search_by_index(&term, &index)),
-        _ => Err("Unrecognized search method".to_string()),
-    }};
-
-    time_search(search_method)
+    match method_answer.trim() {
+        "1" => Ok(SearchMethod::StringMatch),
+        "2" => Ok(SearchMethod::Regex),
+        "3" => Ok(SearchMethod::Index),
+        _ => Err("Unrecognized method".to_string())
+    }
 }
 
 fn time_search<F>(search_func: F) -> Result<SearchResults, String>

@@ -8,11 +8,41 @@ pub use self::input_document::InputDocument;
 
 use regex::Regex;
 
-pub fn search_by_index(term: &str, index: &DocumentIndex) -> Vec<String> {
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum SearchMethod {
+    StringMatch,
+    Regex,
+    Index
+}
+
+pub type SearchFn = Fn(&str, &DocumentIndex, &Vec<InputDocument>) ->
+    Result<Vec<String>, String>;
+
+
+pub fn get_search_function(method: SearchMethod) -> Box<SearchFn> {
+   match method {
+        SearchMethod::StringMatch => Box::new(move |t,_,d| Ok(search_by_string_match(t, d))),
+        SearchMethod::Regex => Box::new(move |t,_,d| {
+            let re = Regex::new(t);
+            if let Err(e) = re {
+                let msg = format!("Expression invalid: {}", e);
+                return Err(msg);
+            };
+
+            let re = re.ok().unwrap();
+
+            Ok(search_by_regex(&re, d))
+        }),
+        SearchMethod::Index => Box::new(move |t,i,_| Ok(search_by_index(t, i)))
+    }
+}
+
+fn search_by_index(term: &str, index: &DocumentIndex) -> Vec<String> {
     index.search(&term)
 }
 
-pub fn search_by_string_match(term: &str, docs: &Vec<InputDocument>) -> Vec<String> {
+fn search_by_string_match(term: &str, docs: &Vec<InputDocument>) -> Vec<String> {
     let mut matches = docs.iter()
         .map(|doc| (doc, doc.contents().matches(term).count()))
         .filter(|x| x.1 > usize::min_value())
@@ -22,7 +52,7 @@ pub fn search_by_string_match(term: &str, docs: &Vec<InputDocument>) -> Vec<Stri
     matches.iter().map(|x| x.0.name().to_string()).collect()
 }
 
-pub fn search_by_regex(regex: &Regex, docs: &Vec<InputDocument>) -> Vec<String> {
+fn search_by_regex(regex: &Regex, docs: &Vec<InputDocument>) -> Vec<String> {
     let mut matches = docs.iter()
         .map(|doc| (doc, regex.find_iter(doc.contents()).count()))
         .filter(|x| x.1 > usize::min_value())
