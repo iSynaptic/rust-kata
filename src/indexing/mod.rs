@@ -23,17 +23,7 @@ pub type SearchFn = Fn(&str, &DocumentIndex, &Vec<InputDocument>) ->
 pub fn get_search_function(method: SearchMethod) -> Box<SearchFn> {
    match method {
         SearchMethod::StringMatch => Box::new(move |t,_,d| Ok(search_by_string_match(t, d))),
-        SearchMethod::Regex => Box::new(move |t,_,d| {
-            let re = Regex::new(t);
-            if let Err(e) = re {
-                let msg = format!("Expression invalid: {}", e);
-                return Err(msg);
-            };
-
-            let re = re.ok().unwrap();
-
-            Ok(search_by_regex(&re, d))
-        }),
+        SearchMethod::Regex => Box::new(move |t,_,d| search_by_regex(t, d)),
         SearchMethod::Index => Box::new(move |t,i,_| Ok(search_by_index(t, i)))
     }
 }
@@ -52,12 +42,20 @@ fn search_by_string_match(term: &str, docs: &Vec<InputDocument>) -> Vec<String> 
     matches.iter().map(|x| x.0.name().to_string()).collect()
 }
 
-fn search_by_regex(regex: &Regex, docs: &Vec<InputDocument>) -> Vec<String> {
+fn search_by_regex(term: &str, docs: &Vec<InputDocument>) -> Result<Vec<String>, String> {
+    let re = Regex::new(term);
+    if let Err(e) = re {
+        let msg = format!("Expression invalid: {}", e);
+        return Err(msg);
+    };
+
+    let re = re.ok().unwrap();
+
     let mut matches = docs.iter()
-        .map(|doc| (doc, regex.find_iter(doc.contents()).count()))
+        .map(|doc| (doc, re.find_iter(doc.contents()).count()))
         .filter(|x| x.1 > usize::min_value())
         .collect::<Vec<(&InputDocument, usize)>>();
 
     matches.sort_by(|&x, &y| x.1.cmp(&y.1));
-    matches.iter().map(|x| x.0.name().to_string()).collect()
+    Ok(matches.iter().map(|x| x.0.name().to_string()).collect())
 }
