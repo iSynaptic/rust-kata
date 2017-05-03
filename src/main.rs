@@ -19,7 +19,7 @@ use indexing::{InputDocument, DocumentIndex, DocumentLoader, SearchMethod };
 
 struct SearchResults {
     duration: Duration,
-    documents: Vec<String>,
+    hits: Vec<(String, u64)>,
 }
 
 fn main() {
@@ -125,8 +125,8 @@ fn interactive_search(docs: &Vec<InputDocument>, index: &DocumentIndex) {
 
         println!("Search results:\n");
 
-        for result in results.documents {
-            println!("  {}", result);
+        for hit in results.hits {
+            println!("  {} - {} matches", hit.0, hit.1);
         }
 
         let duration = results.duration;
@@ -204,14 +204,14 @@ fn prompt_for_method() -> Result<SearchMethod, String> {
 }
 
 fn time_search<F>(search_func: F) -> Result<SearchResults, String>
-    where F: Fn() -> Result<Vec<String>, String>
+    where F: Fn() -> Result<Vec<(String, u64)>, String>
 {
     let (results, duration) = 
         time_work(|| search_func());
 
     Ok(SearchResults {
            duration: duration,
-           documents: results?,
+           hits: results?,
        })
 }
 

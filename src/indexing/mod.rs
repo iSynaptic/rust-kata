@@ -41,7 +41,7 @@ impl fmt::Display for SearchMethod {
 }
 
 pub type SearchFn = Fn(&str, &DocumentIndex, &Vec<InputDocument>) ->
-    Result<Vec<String>, String>;
+    Result<Vec<(String, u64)>, String>;
 
 
 pub fn get_search_function(method: SearchMethod) -> Box<SearchFn> {
@@ -52,21 +52,28 @@ pub fn get_search_function(method: SearchMethod) -> Box<SearchFn> {
     }
 }
 
-fn search_by_index(term: &str, index: &DocumentIndex) -> Vec<String> {
+fn search_by_index(term: &str, index: &DocumentIndex) -> Vec<(String, u64)> {
     index.search(&term)
+        .into_iter()
+        .map(|x| (x, 0))
+        .collect::<Vec<(String, u64)>>()
 }
 
-fn search_by_string_match(term: &str, docs: &Vec<InputDocument>) -> Vec<String> {
+fn search_by_string_match(term: &str, docs: &Vec<InputDocument>) -> Vec<(String, u64)> {
     let mut matches = docs.iter()
         .map(|doc| (doc, doc.contents().matches(term).count()))
         .filter(|x| x.1 > usize::min_value())
         .collect::<Vec<(&InputDocument, usize)>>();
 
     matches.sort_by(|&x, &y| x.1.cmp(&y.1));
-    matches.iter().map(|x| x.0.name().to_string()).collect()
+    matches
+        .into_iter()
+        .map(|x| x.0.name().to_string())
+        .map(|x| (x, 0))
+        .collect()
 }
 
-fn search_by_regex(term: &str, docs: &Vec<InputDocument>) -> Result<Vec<String>, String> {
+fn search_by_regex(term: &str, docs: &Vec<InputDocument>) -> Result<Vec<(String, u64)>, String> {
     let re = Regex::new(term);
     if let Err(e) = re {
         let msg = format!("Expression invalid: {}", e);
@@ -81,5 +88,9 @@ fn search_by_regex(term: &str, docs: &Vec<InputDocument>) -> Result<Vec<String>,
         .collect::<Vec<(&InputDocument, usize)>>();
 
     matches.sort_by(|&x, &y| x.1.cmp(&y.1));
-    Ok(matches.iter().map(|x| x.0.name().to_string()).collect())
+    Ok(matches
+        .into_iter()
+        .map(|x| x.0.name().to_string())
+        .map(|x| (x, 0))
+        .collect())
 }
