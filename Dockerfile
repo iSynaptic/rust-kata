@@ -7,4 +7,4 @@ RUN chmod +x /app/rustkata
 
 WORKDIR /app
 
-CMD ["./rustkata"]
+ENTRYPOINT ["./rustkata"]

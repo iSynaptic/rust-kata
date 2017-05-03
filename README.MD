@@ -3,6 +3,7 @@
 This repository contains an exercise in writing Rust code to search a document corpus by multiple methods and compare performance profiles. It also contains an exercise in documenting the high-level requirements, approach, design considerations, and assumptions.
 
 - [Build / Usage](#build--usage)
+  * [Docker Image](#docker-image)
   * [Vagrant Machine](#vagrant-machine)
 
 ## Build / Usage ##
@@ -12,6 +13,13 @@ In order to build and run this project you need to have the following prerequisi
 - Rust 1.18 Nightly (tested with version `128aa262e 2017-04-28`)
 
 Clone this repository into a directory on your local machine. Navigate into the new project directory and run the `cargo build --release`.  This should compile the `rustkata` program.  NOTE: The first time this is done, it may take a while - the dependent packages ("crates") are being downloaded and compiled.  The executable should be in the `target/release` directory. Typing `./target/release/rustkata` should run the program.
+
+### Docker Image ###
+A Docker image has been built and uploaded to the public Docker hub.  It's designed to be run interactively.  To run the image, you must have the following prerequisites installed:
+
+- Docker 17.03.1-ce
+
+At a terminal prompt, type `docker run --rm -it jordanterrell/rustkata:0.1.0-rc.2`.  This will run the Rust Kata application in a container and allow you to interact with the container.  If you would like to run the performance benchmark, type `docker run --rm -it jordanterrell/rustkata:0.1.0-rc.2 --mode perf`.
 
 ### Vagrant Machine ###
 
