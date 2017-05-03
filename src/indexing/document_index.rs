@@ -121,7 +121,8 @@ mod tests {
         let results = index.search("sample");
 
         assert!(results.len() == 1);
-        assert_eq!(results[0], "one")
+        assert_eq!(results[0].0, "one");
+        assert_eq!(results[0].1, 1)
     }
 
     #[test]
@@ -137,7 +138,10 @@ mod tests {
         let results = index.search("velocity");
 
         assert!(results.len() == 2);
-        assert_eq!(results[0], "one");
-        assert_eq!(results[1], "three");
+        assert_eq!(results[0].0, "one");
+        assert_eq!(results[0].1, 1);
+
+        assert_eq!(results[1].0, "three");
+        assert_eq!(results[1].1, 1);
     }
 }
