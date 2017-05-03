@@ -1,34 +1,57 @@
-use tantivy::Index;
+use tantivy::{DocAddress, Searcher, Index, Term, SegmentPostingsOption};
 use tantivy::schema::*;
-use tantivy::query::QueryParser;
+use tantivy::postings::{DocSet, Postings, SkipResult};
+use tantivy::query::TermQuery;
 use tantivy::collector::TopCollector;
 
 use InputDocument;
 
 pub struct DocumentIndex {
     index: Index,
-    query_parser: QueryParser,
-
     name_field: Field,
 }
 
 impl DocumentIndex {
-    pub fn search(&self, q: &str) -> Vec<String> {
-        let query = self.query_parser.parse_query(q).unwrap();
+    pub fn search(&self, term: &str) -> Vec<(String, u64)> {
+        let contents_field = self.index.schema().get_field("contents").unwrap();
+
+        let term = Term::from_field_text(contents_field, term);
+        let query = TermQuery::new(term.clone(), SegmentPostingsOption::Freq);
+        
         let searcher = self.index.searcher();
 
         let mut top_collector = TopCollector::with_limit(10);
-        searcher.search(&*query, &mut top_collector).unwrap();
+        searcher.search(&query, &mut top_collector).unwrap();
 
+        // This is a bit messy. It would probably benefit from creating some intermediate
+        // types.  This bit of code exists primarily to satisfy the requirement that results be
+        // based on term frequency (ie. number of occurences), and not a TF-IDF based score.
+        // Technically, the search is still based on the TF-IDF score, but the results are 
+        // strictly term frequency.
         top_collector
             .docs()
             .into_iter()
-            .flat_map(|x| searcher.doc(&x))
-            .flat_map(|x| {
-                          x.get_first(self.name_field)
-                              .map(|f| f.text().to_string())
-                      })
-            .collect::<Vec<_>>()
+            .map(|x| (x, DocumentIndex::extract_termfreq(&searcher, &term, &x.clone()).unwrap())) // get term frequency
+            .map(|x| (searcher.doc(&x.0).unwrap(), x.1)) // retreive the document 
+            .map(|x| {( // extract the name from the document
+                x.0.get_first(self.name_field).map(|f| f.text().to_string()).unwrap(),
+                x.1
+            )})
+            .collect()
+    }
+
+    fn extract_termfreq(searcher: &Searcher, term: &Term, doc_address: &DocAddress) -> Option<u64> {
+        searcher
+            .segment_reader(doc_address.segment_ord() as usize)
+            .read_postings(term, SegmentPostingsOption::Freq)
+            .and_then(|mut postings| {
+                if postings.skip_next(doc_address.doc()) == SkipResult::Reached {
+                    Some(postings.term_freq() as u64)
+                }
+                else {
+                    None
+                }
+            })
     }
 
     pub fn build_index<'a, T>(input_docs: T) -> Result<DocumentIndex, ::tantivy::Error>
@@ -54,11 +77,8 @@ impl DocumentIndex {
         try!(index_writer.commit());
         try!(index.load_searchers());
 
-        let query_parser = QueryParser::new(index.schema(), vec![contents_field]);
-
         Ok(DocumentIndex {
                index: index,
-               query_parser: query_parser,
                name_field: name_field,
            })
     }

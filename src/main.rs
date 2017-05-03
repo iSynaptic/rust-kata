@@ -184,7 +184,7 @@ fn prompt_for_method_and_search(term: &str,
 
 fn prompt_for_method() -> Result<SearchMethod, String> {
     let mut method_answer = String::new();
-    println!("Search Method: 1) String Match 2) Regular Expression 3) Indexed");
+    println!("Search Method: 1) String Match 2) Regular Expression 3) Tantivy Index");
     print!("Enter method: ");
     io::stdout().flush().unwrap();
 
@@ -197,7 +197,7 @@ fn prompt_for_method() -> Result<SearchMethod, String> {
     match method_answer.trim() {
         "1" => Ok(SearchMethod::StringMatch),
         "2" => Ok(SearchMethod::Regex),
-        "3" => Ok(SearchMethod::Index),
+        "3" => Ok(SearchMethod::TantivyIndex),
         _ => Err("Unrecognized method".to_string())
     }
 }

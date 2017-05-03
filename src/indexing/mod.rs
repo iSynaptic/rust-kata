@@ -14,7 +14,7 @@ use std::slice::Iter;
 pub enum SearchMethod {
     StringMatch,
     Regex,
-    Index
+    TantivyIndex
 }
 
 impl SearchMethod {
@@ -22,7 +22,7 @@ impl SearchMethod {
         static METHODS: [SearchMethod;  3] = [
             SearchMethod::StringMatch,
             SearchMethod::Regex,
-            SearchMethod::Index,
+            SearchMethod::TantivyIndex,
         ];
 
         METHODS.into_iter()
@@ -34,7 +34,7 @@ impl fmt::Display for SearchMethod {
         let text = match *self {
             SearchMethod::StringMatch => "String Match",
             SearchMethod::Regex => "Regular Expression",
-            SearchMethod::Index => "Indexed",
+            SearchMethod::TantivyIndex => "Tantivy Index",
         };
         write!(f, "{}", text)
     }
@@ -48,7 +48,7 @@ pub fn get_search_function(method: SearchMethod) -> Box<SearchFn> {
    let underlying : Box<SearchFn> = match method {
         SearchMethod::StringMatch => Box::new(move |t,_,d| Ok(search_by_string_match(t, d))),
         SearchMethod::Regex => Box::new(move |t,_,d| search_by_regex(t, d)),
-        SearchMethod::Index => Box::new(move |t,i,_| Ok(search_by_index(t, i)))
+        SearchMethod::TantivyIndex => Box::new(move |t,i,_| Ok(search_by_index(t, i)))
     };
 
     Box::new(move |t,i,d|{
@@ -66,9 +66,6 @@ pub fn get_search_function(method: SearchMethod) -> Box<SearchFn> {
 
 fn search_by_index(term: &str, index: &DocumentIndex) -> Vec<(String, u64)> {
     index.search(&term)
-        .into_iter()
-        .map(|x| (x, 0))
-        .collect::<Vec<(String, u64)>>()
 }
 
 fn search_by_string_match(term: &str, docs: &Vec<InputDocument>) -> Vec<(String, u64)> {
