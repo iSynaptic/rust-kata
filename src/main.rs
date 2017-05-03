@@ -138,7 +138,6 @@ fn interactive_search(docs: &Vec<InputDocument>, index: &DocumentIndex) {
                      duration.num_microseconds().unwrap());
         }
 
-
         if !ask_should_continue() {
             break;
         }
