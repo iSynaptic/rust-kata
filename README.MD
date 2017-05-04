@@ -51,12 +51,12 @@ Once all iterations run for each search method, the program should display the t
 
 #### Example: ####
 
-	How many iterations would you like to run: 2000000
+	How many iterations would you like to run: 100
 	Results:
 
-	  String Match: 13903 ms
-	  Regular Expression: 61830 ms
-	  Pre-computed Index: 24088 ms
+	  String Match: 956 μs
+	  Regular Expression: 3 ms
+	  Pre-computed Index: 5 ms
 
 Sample documents are provided along with these requirements.
 
