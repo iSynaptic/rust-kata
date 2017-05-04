@@ -18,7 +18,7 @@ This repository contains an exercise in writing Rust code to search a document c
 
 ### High Level ###
 
-Create a working program to search a set of documents for a user provided search term and return a list of document names that contain the term. The list should be ordered, descending, by relevance. Multiple search methods should be provided and their performance should be comparable.
+Create a working program to search a set of documents for a user provided search term and return a list of document names that contain the term. The list should be ordered, descending, by relevance. Multiple search methods should be provided and a performance benchmark should be provided to compare their performance.
 
 ### Functional Requirements ###
 
