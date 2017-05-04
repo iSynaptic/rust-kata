@@ -3,4 +3,4 @@
 set -e
 
 cargo build --release
-docker build -t rustkata .
+docker build --no-cache --force-rm -t rustkata .
