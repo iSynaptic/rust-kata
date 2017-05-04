@@ -180,7 +180,7 @@ In order to build and run this project you need to have the following prerequisi
 
 Clone this repository into a directory on your local machine. In a terminal, navigate into the new project directory and run the `cargo build --release`.  This should compile the `rustkata` program.  NOTE: The first time this is done, it may take a while - the dependent packages ("crates") are being downloaded and compiled.  
 
-The executable should now be in the `target/release` directory. Typing `./target/release/rustkata` (or on Windows `.\target\release\rustkata.exe`) should run the program.
+The executable should now be in the `target/release` directory. Typing `./target/release/rustkata` (or on Windows `.\target\release\rustkata.exe`) should run the program for interactive searching. Adding the argument `--mode perf` will run the program for performance benchmarking.
 
 ### Docker Image ###
 A [Docker](https://www.docker.com/) image has been built and published to the public Docker hub.  It's designed to be run interactively.  To run the image, you must have the following prerequisites installed and and accessible via the PATH environment variable:
